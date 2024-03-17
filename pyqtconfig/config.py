@@ -879,7 +879,7 @@ class ConfigManagerBase(QObject):
     # updating on config changes and ensuring that elements remain in sync
 
     def add_handler(self, key, handler=None, mapper=(lambda x: x, lambda x: x),
-                    default=None):
+                    default=None, preferred_mapper=False):
         """
         Add a handler (UI element) for a given config key.
 
@@ -904,15 +904,18 @@ class ConfigManagerBase(QObject):
                 # If there is a preferred handler in the metadata, create one of those. If there is a preferred mapper
                 # use that
                 handler = self.get_metadata(key)["preferred_handler"]()
-                if self.get_metadata(key)["preferred_map_dict"] is not None:
-                    mapper = self.get_metadata(key)["preferred_map_dict"]
-                    # If we've just created the handler, we need to add the map dict items
-                    handler.addItems(self.get_metadata(key)["preferred_map_dict"].keys())
             # There is not preferred handler, get a default one
             else:
                 handler = self.get_default_handler(type(self.get(key)))
             if handler is None:
                 return
+
+        if (handler is None) or (preferred_mapper == True and
+                               (self.get_metadata(key)["preferred_map_dict"] is not None)):
+            mapper = self.get_metadata(key)["preferred_map_dict"]
+            # If we've just created the handler, we need to add the map dict items
+            handler.addItems(self.get_metadata(key)["preferred_map_dict"].keys())
+
 
         # Add map handler for converting displayed values to
         # internal config data
