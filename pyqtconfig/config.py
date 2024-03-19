@@ -639,7 +639,8 @@ HOOKS = {
 default_metadata = {
     "prefer_hidden": False,
     "preferred_handler": None,
-    "preferred_map_dict": None
+    "preferred_map_dict": None,
+    "preferred_handler_fn": None
 }
 
 
@@ -899,19 +900,22 @@ class ConfigManagerBase(QObject):
 
         # If no handler is supplied, we try to create one either by using either the preferred_handler item in metadata
         # or using a default one based on the type
+        arg_handler = handler
         if handler is None:
             if self.get_metadata(key)["preferred_handler"] is not None:
                 # If there is a preferred handler in the metadata, create one of those. If there is a preferred mapper
                 # use that
                 handler = self.get_metadata(key)["preferred_handler"]()
+                if (handler_fn := self.get_metadata(key)["preferred_handler_fn"]) is not None:
+                    handler_fn(handler)
+
             # There is not preferred handler, get a default one
             else:
                 handler = self.get_default_handler(type(self.get(key)))
             if handler is None:
                 return
 
-        if (handler is None) or (preferred_mapper == True and
-                               (self.get_metadata(key)["preferred_map_dict"] is not None)):
+        if (self.get_metadata(key)["preferred_map_dict"] is not None and (arg_handler is None or preferred_mapper == True)):
             mapper = self.get_metadata(key)["preferred_map_dict"]
             # If we've just created the handler, we need to add the map dict items
             handler.addItems(self.get_metadata(key)["preferred_map_dict"].keys())
